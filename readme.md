@@ -6,5 +6,5 @@
 
 **Project3 Dasetset:** Torchvision MNIST
 
-[Project 4 Dataset](phttp://www.cs.cmu.edu/afs/cs.cmu.edu/user/mitchell/ftp/faces.html) 
+[Project 4 Dataset](http://www.cs.cmu.edu/afs/cs.cmu.edu/user/mitchell/ftp/faces.html)
 
