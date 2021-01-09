@@ -16,7 +16,7 @@ import torch.utils.model_zoo as model_zoo
 
 lr = 1e-4
 EPOCH = 250
-batch_size = 32
+batch_size = 64
 
 dirs = os.listdir("./data/faces_4/")
 data_paths = []
@@ -77,28 +77,16 @@ train_loader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=Tru
 test_loader = DataLoader(dataset=test_data, batch_size=batch_size, shuffle=True)
 data_loader = {'train': train_loader, 'test': test_loader}
 
-
-class LayerUnit(nn.Module):
-    def __init__(self, in_dim, out_dim):
-        super(LayerUnit, self).__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(in_dim, out_dim),
-            nn.BatchNorm1d(out_dim),
-            nn.ReLU(True)
-        )
-
-    def forward(self, x):
-        return self.layers(x)
-
-
 model = models.resnet18(pretrained=True)
 model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
 model.fc = nn.Linear(in_features=512, out_features=4, bias=True)
 model = model.cuda()
 
 criterion = nn.CrossEntropyLoss().cuda()
-optimizer = optim.SGD(model.parameters(), lr=lr)
-# optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.005)
+
+# optimizer = optim.SGD(model.parameters(), lr=lr)
+optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.005)
+
 writer = SummaryWriter('log/project4/project4-2')
 
 global_step = 1
