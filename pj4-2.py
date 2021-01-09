@@ -8,10 +8,15 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
+from torch import nn
+from torchvision import models
+import random
+import math
+import torch.utils.model_zoo as model_zoo
 
 lr = 1e-4
 EPOCH = 250
-batch_size = 256
+batch_size = 32
 
 dirs = os.listdir("./data/faces_4/")
 data_paths = []
@@ -35,7 +40,7 @@ num_class = len(class_names)
 class_to_id = {class_names[i]: i for i in range(len(class_names))}
 id_to_class = {i: class_names[i] for i in range(len(class_names))}
 
-transform_ = transforms.Compose([transforms.Resize((32, 30)),
+transform_ = transforms.Compose([transforms.Resize((224, 224)),
                                  transforms.ToTensor(),
                                  transforms.Normalize([0.5, ], [0.5, ])])
 
@@ -63,14 +68,14 @@ class FaceDataset(Dataset):
         return len(self.data_path)
 
 
-train_data = data_paths[:int(data_size*0.8)]
-test_data = data_paths[int(data_size*0.8):]
-train_data = FaceDataset(train_data, class_to_id=class_to_id, transforms=transform_)
-test_data = FaceDataset(train_data, class_to_id=class_to_id, transforms=transform_)
-train_loader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
-data_loader = {'train': train_loader, 'test': test_loader}
 
+train_data = data_paths[:int(data_size * 0.8)]
+test_data = data_paths[int(data_size * 0.8):]
+train_data = FaceDataset(train_data, class_to_id=class_to_id, transforms=transform_)
+test_data = FaceDataset(test_data, class_to_id=class_to_id, transforms=transform_)
+train_loader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(dataset=test_data, batch_size=batch_size, shuffle=True)
+data_loader = {'train': train_loader, 'test': test_loader}
 
 
 class LayerUnit(nn.Module):
@@ -86,29 +91,14 @@ class LayerUnit(nn.Module):
         return self.layers(x)
 
 
-class NetForFace(nn.Module):
-    def __init__(self, in_dim, num_class):
-        super(NetForFace, self).__init__()
-        self.layer1 = LayerUnit(in_dim, 300)
-        self.layer2 = LayerUnit(300, 200)
-        self.fn = nn.Linear(200, 200)
-        self.dr = nn.Dropout(0.5)
-        self.fn2 = nn.Linear(200, num_class)
-
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.fn(x)
-        x = self.dr(x)
-        x = self.fn2(x)
-        return x
-
-model = NetForFace(32 * 30, num_class=num_class)
+model = models.resnet18(pretrained=True)
+model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+model.fc = nn.Linear(in_features=512, out_features=4, bias=True)
 model = model.cuda()
 
 criterion = nn.CrossEntropyLoss().cuda()
-# optimizer = optim.SGD(model.parameters(), lr=lr)
-optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.005)
+optimizer = optim.SGD(model.parameters(), lr=lr)
+# optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=0.005)
 writer = SummaryWriter('log/project4/project4-2')
 
 global_step = 1
@@ -118,11 +108,11 @@ for epoch in range(EPOCH):
         acc_num = 0
         num = 0
         if phase == 'train':
-            model = model.train()
+            model.train()
         else:
-            model = model.eval()
+            model.eval()
         for (data, label) in data_loader[phase]:
-            data = data.view(data.size(0), -1)
+            # data = data.view(data.size(0), -1)
             data = Variable(data).cuda()
             label = Variable(label).cuda()
 
@@ -148,4 +138,3 @@ for epoch in range(EPOCH):
         print("Epoch {} {}: Loss: {}, Acc: {}".format(epoch + 1, phase,
                                                       total_loss / num, acc_num * 1.0 / num))
     print("\n")
-

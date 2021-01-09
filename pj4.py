@@ -30,7 +30,7 @@ EPOCH = 20
 batch_size = 16
 
 train_loader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(dataset=train_data, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(dataset=test_data, batch_size=batch_size, shuffle=True)
 data_loader = {'train': train_loader, 'test': test_loader}
 
 model = NetForMNIST(32 * 30, num_class=num_class)
